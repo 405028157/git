@@ -543,11 +543,46 @@ test_expect_success 'fetch into the current branch with --update-head-ok' '
 
 '
 
-test_expect_success 'fetch --dry-run' '
-
+test_expect_success 'fetch --dry-run does not touch FETCH_HEAD' '
 	rm -f .git/FETCH_HEAD &&
 	git fetch --dry-run . &&
 	! test -f .git/FETCH_HEAD
+'
+
+test_expect_success '--no-write-fetch-head does not touch FETCH_HEAD' '
+	rm -f .git/FETCH_HEAD &&
+	git fetch --no-write-fetch-head . &&
+	! test -f .git/FETCH_HEAD
+'
+
+test_expect_success '--write-fetch-head gets defeated by --dry-run' '
+	rm -f .git/FETCH_HEAD &&
+	git fetch --dry-run --write-fetch-head . &&
+	! test -f .git/FETCH_HEAD
+'
+
+test_expect_success 'fetch.writeFetchHEAD and FETCH_HEAD' '
+	rm -f .git/FETCH_HEAD &&
+	git -c fetch.writeFetchHEAD=no fetch . &&
+	! test -f .git/FETCH_HEAD
+'
+
+test_expect_success 'fetch.writeFetchHEAD gets defeated by --dry-run' '
+	rm -f .git/FETCH_HEAD &&
+	git -c fetch.writeFetchHEAD=yes fetch --dry-run . &&
+	! test -f .git/FETCH_HEAD
+'
+
+test_expect_success 'fetch.writeFetchHEAD and --no-write-fetch-head' '
+	rm -f .git/FETCH_HEAD &&
+	git -c fetch.writeFetchHEAD=yes fetch --no-write-fetch-head . &&
+	! test -f .git/FETCH_HEAD
+'
+
+test_expect_success 'fetch.writeFetchHEAD and --write-fetch-head' '
+	rm -f .git/FETCH_HEAD &&
+	git -c fetch.writeFetchHEAD=no fetch --write-fetch-head . &&
+	test -f .git/FETCH_HEAD
 '
 
 test_expect_success "should be able to fetch with duplicate refspecs" '
@@ -923,7 +958,7 @@ test_expect_success 'fetching with auto-gc does not lock up' '
 		git config fetch.unpackLimit 1 &&
 		git config gc.autoPackLimit 1 &&
 		git config gc.autoDetach false &&
-		GIT_ASK_YESNO="$D/askyesno" git fetch >fetch.out 2>&1 &&
+		GIT_ASK_YESNO="$D/askyesno" git fetch --verbose >fetch.out 2>&1 &&
 		test_i18ngrep "Auto packing the repository" fetch.out &&
 		! grep "Should I try again" fetch.out
 	)
